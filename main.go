@@ -6,4 +6,5 @@ import (
 
 func main() {
 	hmlandreg.Init()
+	hmlandreg.TestCall()
 }

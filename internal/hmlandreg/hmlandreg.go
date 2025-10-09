@@ -1,35 +1,60 @@
 package hmlandreg
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-
+	sq "github.com/Masterminds/squirrel"
+	"github.com/go-sql-driver/mysql"
 	_ "github.com/joho/godotenv/autoload"
 )
 
-var db *gorm.DB
+var db *sql.DB
 
 func Init() {
-	dsn := fmt.Sprintf("%v:%v@tcp(%v)/%v",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASS"),
-		os.Getenv("DB_ADDR"),
-		os.Getenv("DB_NAME"))
+	fmt.Println(os.Getenv("DB_ADDR"))
+	dsn := mysql.NewConfig()
+	dsn.Net = "tcp"
+	dsn.User = os.Getenv("DB_USER")
+	dsn.Passwd = os.Getenv("DB_PASS")
+	dsn.Addr = os.Getenv("DB_ADDR")
+	dsn.DBName = os.Getenv("DB_NAME")
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	var err error
+	db, err = sql.Open("mysql", dsn.FormatDSN())
+
 	if err != nil {
-		log.Fatal("can't connect to DB")
+		log.Fatal(err)
 	}
 
-	var version string
-	if err := db.Raw("SELECT VERSION()").Scan(&version).Error; err != nil {
-		log.Fatal("test query failed: ", err)
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	fmt.Println(version)
+	fmt.Println("db connected")
+}
 
+func TestCall() {
+	var prices []int
+	q := sq.Select("price").From("house_sales")
+
+	rows, err := q.RunWith(db).Query()
+	if err != nil {
+		fmt.Println("query error")
+	}
+
+	for rows.Next() {
+		var sale int
+		if err := rows.Scan(&sale); err != nil {
+			fmt.Println("row scan error")
+		}
+
+		prices = append(prices, sale)
+
+	}
+
+	fmt.Println(prices)
 }
