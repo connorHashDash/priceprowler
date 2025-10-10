@@ -14,3 +14,9 @@ type houseSales struct {
 	Sreet         string    `json:"street"`
 	RecordStatus  rune      `json:"record_status"`
 }
+
+type PriceTrendData struct {
+	Month        string
+	PropertyType []byte
+	AvgPrice     int
+}

@@ -37,24 +37,30 @@ func Init() {
 	fmt.Println("db connected")
 }
 
-func TestCall() {
-	var prices []int
-	q := sq.Select("price").From("house_sales")
+func GetPriceChange_AllTypes() ([]PriceTrendData, error) {
+	var TrendData []PriceTrendData
+	q := sq.Select(
+		"DATE_FORMAT(transfer_date, '%Y-%m') AS month",
+		"property_type",
+		"ROUND(AVG(price)) AS avg_price",
+	).
+		From("house_sales").
+		Where(sq.Eq{"record_status": "h"}).
+		GroupBy("month", "property_type").
+		OrderBy("property_type")
 
 	rows, err := q.RunWith(db).Query()
 	if err != nil {
-		fmt.Println("query error")
+		return nil, err
 	}
 
 	for rows.Next() {
-		var sale int
-		if err := rows.Scan(&sale); err != nil {
-			fmt.Println("row scan error")
+		var r PriceTrendData
+		if err := rows.Scan(&r.Month, &r.PropertyType, &r.AvgPrice); err != nil {
+			return nil, err
 		}
-
-		prices = append(prices, sale)
-
+		TrendData = append(TrendData, r)
 	}
 
-	fmt.Println(prices)
+	return TrendData, nil
 }
