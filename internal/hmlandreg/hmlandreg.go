@@ -42,8 +42,7 @@ func GetPriceChange_AllTypes() ([]PriceTrendData, error) {
 	q := sq.Select(
 		"DATE_FORMAT(transfer_date, '%Y-%m') AS month",
 		"property_type",
-		"ROUND(AVG(price)) AS avg_price",
-	).
+		"ROUND(AVG(price)) AS avg_price").
 		From("house_sales").
 		Where(sq.Eq{"record_status": "h"}).
 		GroupBy("month", "property_type").
