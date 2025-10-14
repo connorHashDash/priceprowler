@@ -2,7 +2,6 @@ package hmlandreg
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 
@@ -14,7 +13,6 @@ import (
 var db *sql.DB
 
 func Init() {
-	fmt.Println(os.Getenv("DB_ADDR"))
 	dsn := mysql.NewConfig()
 	dsn.Net = "tcp"
 	dsn.User = os.Getenv("DB_USER")
@@ -33,8 +31,6 @@ func Init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println("db connected")
 }
 
 func GetPriceChange_AllTypes() ([]PriceTrendData, error) {
@@ -46,7 +42,7 @@ func GetPriceChange_AllTypes() ([]PriceTrendData, error) {
 		From("house_sales").
 		Where(sq.Eq{"record_status": "h"}).
 		GroupBy("month", "property_type").
-		OrderBy("property_type")
+		OrderBy("property_type, month")
 
 	rows, err := q.RunWith(db).Query()
 	if err != nil {
@@ -62,4 +58,29 @@ func GetPriceChange_AllTypes() ([]PriceTrendData, error) {
 	}
 
 	return TrendData, nil
+}
+
+func GetPriceChange_WholePostcode() ([]WholePostCodeTrend, error) {
+	var res []WholePostCodeTrend
+	q := sq.Select(
+		"DATE_FORMAT(transfer_date, '%Y-%m') AS month",
+		"ROUND(AVG(price)) AS avg_price").
+		From("house_sales").
+		GroupBy("Month").
+		OrderBy("Month")
+
+	rows, err := q.RunWith(db).Query()
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var r WholePostCodeTrend
+		if err := rows.Scan(&r.Month, &r.AvgPrice); err != nil {
+			return nil, err
+		}
+		res = append(res, r)
+	}
+
+	return res, nil
+
 }

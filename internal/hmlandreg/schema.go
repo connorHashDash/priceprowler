@@ -20,3 +20,8 @@ type PriceTrendData struct {
 	PropertyType []byte
 	AvgPrice     int
 }
+
+type WholePostCodeTrend struct {
+	Month    string
+	AvgPrice int
+}
