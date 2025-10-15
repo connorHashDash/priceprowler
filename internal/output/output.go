@@ -2,8 +2,10 @@ package output
 
 import (
 	"fmt"
-	"github.com/fatih/color"
+	"math"
 	"priceprowler/internal/hmlandreg"
+
+	"github.com/fatih/color"
 )
 
 func TrendByPropertyType() error {
@@ -12,51 +14,26 @@ func TrendByPropertyType() error {
 		return err
 	}
 
-	var wholeTypes = map[byte]string{
-		'D': "Detached",
-		'S': "Semi-Detached",
-		'T': "Terraced",
-		'F': "Flat",
-		'O': "Other",
+	/*
+		var wholeTypes = map[byte]string{
+			'D': "Detached",
+			'S': "Semi-Detached",
+			'T': "Terraced",
+			'F': "Flat",
+			'O': "Other",
+		}
+	*/
+
+	//Make data grouped by month from call:
+	var months = make(map[string]map[byte]int)
+
+	for _, r := range TrendData {
+		if months[r.Month] == nil {
+			months[r.Month] = make(map[byte]int)
+		}
+		months[r.Month][r.PropertyType[0]] = r.AvgPrice
 	}
 
-	var prevType string
-	var prevPrice int
-	for k, v := range TrendData {
-		if prevType != string(v.PropertyType) {
-			if k != 0 {
-				fmt.Printf("\n")
-			}
-			color.Set(color.Bold)
-			fmt.Println("---" + wholeTypes[v.PropertyType[0]] + "---")
-			color.Unset()
-			prevPrice = 0
-		}
-
-		var priceColor func(format string, a ...any)
-		var arrow rune
-		if prevPrice > v.AvgPrice && prevPrice > 0 {
-			priceColor = color.New(color.FgRed).PrintfFunc()
-			arrow = '↓'
-		} else if prevPrice < v.AvgPrice && prevPrice > 0 {
-			priceColor = color.New(color.FgGreen).PrintfFunc()
-			arrow = '↑'
-		} else {
-			priceColor = color.New(color.FgWhite).PrintfFunc()
-			arrow = ' '
-		}
-
-		prevType = string(v.PropertyType)
-		fmt.Printf("%v ", v.Month)
-		priceColor("%v", v.AvgPrice)
-		if prevPrice != 0 {
-			priceColor("%6.2f%% ", calculatePercentDiff(float64(prevPrice), float64(v.AvgPrice)))
-		}
-		priceColor("%v", string(arrow))
-		fmt.Printf("\n")
-		prevPrice = v.AvgPrice
-
-	}
 	return nil
 }
 
@@ -66,11 +43,56 @@ func WholePostCodeTrend() error {
 		return err
 	}
 
+	fmt.Printf("\n\n")
+	prevVal := 0
 	for k, v := range data {
-		fmt.Printf("%v,%v", k, v)
+		if k == 0 {
+			fmt.Println("---Whole Area---")
+		}
+		percentage := calculatePercentDiff(float64(prevVal), float64(v.AvgPrice))
+		colourFunc, arrow := colourOutput(percentage)
+
+		fmt.Printf("%v\t", v.Month)
+		if math.IsInf(percentage, 1) {
+			colourFunc("%v %v\n", v.AvgPrice, string(arrow))
+		} else {
+			colourFunc("%v %6.2f%% %v\n", v.AvgPrice, percentage, string(arrow))
+		}
+		prevVal = v.AvgPrice
+
+		// Final Difference Calculation
+		if k == len(data)-1 {
+			var firstValue int = data[0].AvgPrice
+			var lastValue int = data[len(data)-1].AvgPrice
+
+			var totalDiff float64 = calculatePercentDiff(float64(firstValue), float64(lastValue))
+			colourFunc, arrow = colourOutput(totalDiff)
+			fmt.Printf("Total change in postcode: ")
+			colourFunc("%6.2f%% %v\n", totalDiff, string(arrow))
+		}
 	}
 
 	return nil
+}
+
+func colourOutput(percentage float64) (func(format string, a ...any), rune) {
+	var colourFunc func(format string, a ...any)
+	var arrow rune
+	if math.IsInf(percentage, 1) {
+		colourFunc = color.New(color.FgWhite).PrintfFunc()
+		arrow = ' '
+	} else if percentage < 0 {
+		colourFunc = color.New(color.FgRed).PrintfFunc()
+		arrow = '↓'
+	} else if percentage > 0 {
+		colourFunc = color.New(color.FgGreen).PrintfFunc()
+		arrow = '↑'
+	} else {
+		colourFunc = color.New(color.FgWhite).PrintfFunc()
+		arrow = ' '
+	}
+
+	return colourFunc, arrow
 }
 
 func calculatePercentDiff(PriceA, PriceB float64) float64 {
