@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+if [-z "${1:-}"]; then
+  echo "Usage: $0 <postcode>"
+  exit 1
+fi
+
+POSTCODE="${1}"
 DB_USER=""
 DB_PASS=""
 DB_NAME=""

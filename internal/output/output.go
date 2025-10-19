@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"priceprowler/internal/hmlandreg"
+	"sort"
 
 	"github.com/fatih/color"
 )
@@ -14,15 +15,13 @@ func TrendByPropertyType() error {
 		return err
 	}
 
-	/*
-		var wholeTypes = map[byte]string{
-			'D': "Detached",
-			'S': "Semi-Detached",
-			'T': "Terraced",
-			'F': "Flat",
-			'O': "Other",
-		}
-	*/
+	var PropertyType = []byte{
+		'D',
+		'S',
+		'T',
+		'F',
+		'O',
+	}
 
 	//Make data grouped by month from call:
 	var months = make(map[string]map[byte]int)
@@ -32,6 +31,22 @@ func TrendByPropertyType() error {
 			months[r.Month] = make(map[byte]int)
 		}
 		months[r.Month][r.PropertyType[0]] = r.AvgPrice
+	}
+	sortedMonths := make([]string, 0, len(TrendData))
+
+	for month := range months {
+		sortedMonths = append(sortedMonths, month)
+	}
+
+	sort.Strings(sortedMonths)
+
+	fmt.Printf("Month\tDetac\tSemi\tTerrac\tFlat\tOther")
+	for _, month := range sortedMonths {
+		fmt.Printf("\n%v\t", month)
+		for _, p := range PropertyType {
+			price := months[month][p]
+			fmt.Printf("%d\t", price)
+		}
 	}
 
 	return nil
