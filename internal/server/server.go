@@ -12,7 +12,7 @@ func Start() {
 }
 
 func refreshHouses(w http.ResponseWriter, r *http.Request) {
-	postCode := r.URL.Query().Get("postCode")
+	postCode := r.URL.Query().Get("postcode")
 	if postCode == "" {
 		http.Error(w, "Postcode Missing from request", http.StatusBadRequest)
 		return
