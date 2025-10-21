@@ -32,6 +32,9 @@ func Flags() string {
 }
 
 func ServerCall(postcode string) error {
+	if postcode == "" {
+		return nil
+	}
 	var url string = fmt.Sprintf("%s%s%s%s", "http://", os.Getenv("ENDPOINT_URL"), "?postcode=", postcode)
 	fmt.Println(url)
 	resp, err := http.Get(url)
@@ -40,17 +43,18 @@ func ServerCall(postcode string) error {
 	}
 
 	defer resp.Body.Close()
+	bodyBytes, err := io.ReadAll(resp.Body)
+	bodyString := string(bodyBytes)
 
 	if resp.StatusCode == 200 {
 		fmt.Println("Postcode Updated")
 	}
-	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("%v", err)
 		return err
 	}
 
-	bodyString := string(bodyBytes)
+	fmt.Printf("%v", bodyString)
 
-	return fmt.Errorf("%v", bodyString)
+	return nil
 }

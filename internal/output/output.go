@@ -23,7 +23,6 @@ func TrendByPropertyType() error {
 		'O',
 	}
 
-	//Make data grouped by month from call:
 	var months = make(map[string]map[byte]int)
 
 	for _, r := range TrendData {
@@ -41,12 +40,21 @@ func TrendByPropertyType() error {
 	sort.Strings(sortedMonths)
 
 	fmt.Printf("Month\tDetac\tSemi\tTerrac\tFlat\tOther")
+	prevMonth := ""
 	for _, month := range sortedMonths {
 		fmt.Printf("\n%v\t", month)
 		for _, p := range PropertyType {
+			var arrow rune
+			var colourFunc func(format string, a ...any)
 			price := months[month][p]
-			fmt.Printf("%d\t", price)
+			fmt.Printf("%d", price)
+			if prevMonth != "" {
+				var diff float64 = calculatePercentDiff(float64(months[prevMonth][p]), float64(months[month][p]))
+				colourFunc, arrow = colourOutput(diff)
+				colourFunc("%v\t", string(arrow))
+			}
 		}
+		prevMonth = month
 	}
 
 	return nil
